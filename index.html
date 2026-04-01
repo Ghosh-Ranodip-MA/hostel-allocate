@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UEM-HOSTEL | Advanced Roommate Matching & Allocation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #0d1b3e;
+            --gold: #FFD700;
+            --green: #2e7d32;
+            --red: #e53935;
+            --white: #ffffff;
+            --light-bg: #f4f6fb;
+            --transition-speed: 0.4s;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--navy);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, .rajdhani, button, label, .badge {
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+        }
+
+        /* --- Transitions --- */
+        .screen {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--transition-speed), transform var(--transition-speed);
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .screen.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #warden-login.active, #student-login.active, #student-detail.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+
+        /* --- Global Elements --- */
+        .header {
+            background-color: var(--navy);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: var(--gold);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            background-color: var(--gold);
+            color: var(--navy);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.1);
+        }
+
+        button.secondary { background-color: var(--navy); color: var(--white); }
+        button.outline { background: transparent; border: 2px solid var(--navy); color: var(--navy); }
+        button.danger { background-color: var(--red); color: var(--white); }
+        button.small { padding: 4px 10px; font-size: 0.75rem; }
+
+        .card {
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            border: 1px solid #efefef;
+        }
+
+        .card-header {
+            background: var(--navy);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-bottom: 3px solid var(--gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body { padding: 1.5rem; }
+
+        /* --- Tables --- */
+        .table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid #eee;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: var(--navy); padding: 0.8rem; text-align: left; font-size: 0.8rem; border-bottom: 2px solid #ddd; }
+        td { padding: 0.8rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        tr:nth-child(even) { background-color: var(--light-bg); }
+
+        /* --- Forms --- */
+        .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 200px; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.8rem; font-weight: 700; }
+        .form-group input, .form-group select { width: 100%; padding: 0.7rem; border: 1px solid #ddd; outline: none; }
+        .form-group input:focus { border-color: var(--navy); }
+
+        /* --- Landing --- */
+        #landing-screen.active {
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: var(--navy);
+            color: var(--white);
+            max-width: 100% !important;
+        }
+
+        .hero-title { font-size: 5rem; letter-spacing: 12px; color: var(--gold); margin-bottom: 1rem; }
+        .hero-subtitle { font-size: 1.5rem; margin-bottom: 2rem; opacity: 0.9; }
+
+        /* --- Hostel Visual UI --- */
+        .floor-section { margin-bottom: 3rem; }
+        .floor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--navy);
+            color: var(--gold);
+            padding: 0.8rem 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .room-card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 1.2rem;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            border-top: 5px solid var(--navy);
+        }
+
+        .room-card.empty { border-top: 5px solid #ccc; opacity: 0.7; }
+
+        .occupant-ctrl {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .badge { padding: 2px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 2px; }
+        .badge.single { background: var(--gold); color: var(--navy); }
+        .badge.shared { background: var(--navy); color: white; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 4px;
+        }
+
+        .gender-male { border-left: 5px solid #2196F3; }
+        .gender-female { border-left: 5px solid #F48FB1; }
+
+        /* --- Tab System --- */
+        .tabs { display: flex; gap: 5px; margin-bottom: 1.5rem; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .tab-btn { background: transparent; color: #666; font-weight: 700; border: none; padding: 0.8rem 1.5rem; box-shadow: none; }
+        .tab-btn.active { color: var(--navy); border-bottom: 3px solid var(--navy); }
+        .tab-btn:hover { transform: none; box-shadow: none; }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3rem; }
+            .room-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-header" style="display:none">
+        <header class="header">
+            <div class="brand">UEM-HOSTEL</div>
+            <div class="header-actions">
+                <button class="outline" onclick="goBack()" style="border-color:white; color:white">Back</button>
+                <button class="outline" onclick="logout()" style="border-color:white; color:white">Logout</button>
+            </div>
+        </header>
+    </div>
+
+    <!-- Screen 1: Landing -->
+    <section id="landing-screen" class="screen active">
+        <h1 class="hero-title">UEM-HOSTEL</h1>
+        <p class="hero-subtitle">Advanced Roommate Matching & Allocation</p>
+        <div style="width:100px; height:2px; background:var(--gold); margin: 2rem 0;"></div>
+        <div style="display:flex; gap:1.5rem;">
+            <button onclick="showScreen('warden-login')">Warden Board</button>
+            <button onclick="showScreen('student-login')" class="secondary">Student Hub</button>
+        </div>
+    </section>
+
+    <!-- Warden Login -->
+    <section id="warden-login" class="screen">
+        <div class="card" style="max-width: 450px; width: 100%; margin: 2rem auto;">
+            <div class="card-header"><h3>Warden Access</h3></div>
+            <div class="card-body">
+                <div class="form-group"><label>Warden ID (4 digits)</label><input type="number" id="w-id"></div>
+                <div class="form-group"><label>Password (4 digits)</label><input type="password" id="w-pass"></div>
+                <button onclick="handleWardenLogin()" style="width:100%">Login</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Student Login -->
+    <section id="student-login" class="screen">
+        <div class="card" style="max-width: 450px; width: 100%; margin: 2rem auto;">
+            <div class="card-header"><h3>Student Hub Login</h3></div>
+            <div class="card-body">
+                <div class="form-group"><label>Full Name</label><input type="text" id="s-name-in"></div>
+                <div class="form-group"><label>Phone Number</label><input type="number" id="s-phone-in"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="s-pass-in"></div>
+                <button onclick="handleStudentLogin()" style="width:100%">Login</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Warden Dashboard -->
+    <section id="warden-dashboard" class="screen">
+        <h2 class="rajdhani" style="margin-bottom: 2rem;">Hostel Management Command Center</h2>
+        
+        <!-- Summary Stats Area -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card" style="background:var(--navy); color:white; border-bottom: 5px solid var(--gold);"><div class="card-body"><h4 style="opacity:0.7">Total Students</h4><h2 id="st-total">0</h2></div></div>
+            <div class="card" style="border-bottom: 5px solid var(--green);"><div class="card-body"><h4 style="opacity:0.7">Allocated</h4><h2 id="st-alloc">0</h2></div></div>
+            <div class="card" style="border-bottom: 5px solid var(--red);"><div class="card-body"><h4 style="opacity:0.7">Unallocated</h4><h2 id="st-unalloc">0</h2></div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showDashboardTab('upload', this)">Data Upload</button>
+            <button class="tab-btn" onclick="showDashboardTab('config', this)">Hostel Configuration</button>
+            <button class="tab-btn" onclick="showDashboardTab('allocate', this)">Smart Algorithm</button>
+            <button class="tab-btn" onclick="showDashboardTab('layouts', this)">Visual Layout</button>
+        </div>
+
+        <!-- Tab: Upload -->
+        <div id="dash-tab-upload" class="dash-tab-content">
+            <div class="card">
+                <div class="card-header"><h3>Student Database Upload</h3></div>
+                <div class="card-body">
+                    <div style="border: 2px dashed #ccc; padding: 3rem; text-align: center; background: #fafafa;" onclick="document.getElementById('csv-file').click()">
+                        <p>Click to upload student database (.csv)</p>
+                        <input type="file" id="csv-file" accept=".csv" style="display:none;" onchange="readCSV(this)">
+                    </div>
+                </div>
+            </div>
+            <div id="preview-area" class="card" style="display:none">
+                <div class="card-header"><h3>Data Preview</h3><button onclick="saveStudents()">Confirm Database</button></div>
+                <div class="card-body table-container"><table id="preview-table"></table></div>
+            </div>
+        </div>
+
+        <!-- Tab: Config -->
+        <div id="dash-tab-config" class="dash-tab-content" style="display:none">
+            <div class="card">
+                <div class="card-header"><h3>Hostel Infrastructure Manager</h3></div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group"><label>Hostel Name</label><input type="text" id="new-h-name" placeholder="Ex: Hostel D"></div>
+                        <div class="form-group"><label>Floors</label><input type="number" id="new-h-floors" value="1"></div>
+                        <div class="form-group"><label>Rooms/Floor</label><input type="number" id="new-h-rooms" value="6"></div>
+                        <div class="form-group">
+                            <label>Hostel Gender</label>
+                            <select id="new-h-gender">
+                                <option value="Male">Male Only</option>
+                                <option value="Female">Female Only</option>
+                            </select>
+                        </div>
+                        <button onclick="addHostel()" style="align-self: flex-end;">Add New Hostel</button>
+                    </div>
+                    <p style="margin-bottom: 2rem; color: #666;">Step 1: Upload Student CSV OR Add Students Manually</p>
+                
+                <div class="card" style="background: white; border: 1px solid #ddd; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #0d1b3e;">Manual Student Registration</h3>
+                    <div class="form-row" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                        <div class="form-group"><label>Name</label><input type="text" id="m-name" placeholder="Full Name"></div>
+                        <div class="form-group"><label>Phone</label><input type="text" id="m-phone" placeholder="99XXXXXX"></div>
+                        <div class="form-group"><label>Stream</label><input type="text" id="m-stream" placeholder="CSE/ECE"></div>
+                        <div class="form-group"><label>Year</label><input type="number" id="m-year" value="1"></div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select id="m-gender"><option value="Male">Male</option><option value="Female">Female</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Food</label>
+                            <select id="m-food"><option value="Veg">Veg</option><option value="Non-Veg">Non-Veg</option></select>
+                        </div>
+                        <div class="form-group"><label>Language</label><input type="text" id="m-lang" placeholder="Bengali/English"></div>
+                        <button onclick="addStudentManual()" style="height: 48px; align-self: flex-end;">Add Student</button>
+                    </div>
+                </div>
+
+                <div class="card" style="background: white; border: 1px solid #ddd; margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #0d1b3e;">CSV Import & Data Control</h3>
+                    <div class="form-row">
+                        <input type="file" id="csv-file" accept=".csv" style="padding: 0.5rem;">
+                        <button onclick="handleCSVUpload()">Import CSV Dataset</button>
+                        <button class="outline" onclick="resetSystem()" style="border-color: #e53935; color: #e53935;">Clear All Data & Reset</button>
+                    </div>
+                </div>
+
+                <hr style="margin: 2rem 0; border: 0.5px solid #eee;">
+                    <div id="hostel-list-config" class="table-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Allocate -->
+        <div id="dash-tab-allocate" class="dash-tab-content" style="display:none">
+            <div class="card">
+                <div class="card-header"><h3>Roommate Matching Algorithm</h3></div>
+                <div class="card-body">
+                    <p style="margin-bottom: 2rem;">Matching is automatically separated by **Gender**. Genders never share a room.</p>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <label class="pref-item" style="background:#f0f0f0; padding:1rem;"><input type="checkbox" class="criteria" value="Stream"> Stream Match</label>
+                        <label class="pref-item" style="background:#f0f0f0; padding:1rem;"><input type="checkbox" class="criteria" value="FoodHabit"> Food Habit Match</label>
+                        <label class="pref-item" style="background:#f0f0f0; padding:1rem;"><input type="checkbox" class="criteria" value="Year"> Year Match</label>
+                        <label class="pref-item" style="background:#f0f0f0; padding:1rem;"><input type="checkbox" class="criteria" value="NativeLanguage"> Language Match</label>
+                    </div>
+                    <button onclick="runAllocationEngine()" style="width:100%; padding: 1.5rem; font-size: 1.2rem;">Execute Matching Algorithm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Layouts -->
+        <div id="dash-tab-layouts" class="dash-tab-content" style="display:none">
+            <div id="hostel-tabs-bar" class="tabs"></div>
+            <div id="hostel-visual-container"></div>
+            <div style="margin-top: 2rem;">
+                <button onclick="downloadFullRegistry()">Download Global Registry (CSV)</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Student Detail -->
+    <section id="student-detail" class="screen">
+        <div id="s-detail-content"></div>
+    </section>
+
+    <!-- Modals -->
+    <div id="modal-edit-occupant" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="rajdhani">Manual Room Assignment</h3>
+            <p id="room-ref-display" style="font-size:0.8rem; margin-bottom: 1.5rem; color:#666;"></p>
+            <div class="form-group">
+                <label>Select Student to Place</label>
+                <select id="modal-st-picker"></select>
+            </div>
+            <div style="display:flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button class="outline" onclick="closeModal()">Cancel</button>
+                <button onclick="saveManualAssignment()">Assign Student</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- INITIAL DATA RESET ON REFRESH --- */
+        localStorage.removeItem('uem_students');
+        localStorage.removeItem('uem_allocation');
+
+        let state = {
+            students: [],
+            allocation: [],
+            config: JSON.parse(localStorage.getItem('uem_config')) || [
+                { id: 1, name: 'Hostel A', floors: 2, roomsPerFloor: 6, gender: 'Male' },
+                { id: 2, name: 'Hostel B', floors: 2, roomsPerFloor: 6, gender: 'Male' },
+                { id: 3, name: 'Hostel C', floors: 3, roomsPerFloor: 6, gender: 'Female' }
+            ],
+            wardenId: sessionStorage.getItem('w_id'),
+            activeStudent: null,
+            currentLayoutHostelId: null,
+            modalTarget: null, // {hostelId, floor, room, slotIdx}
+            tempCSV: []
+        };
+
+        // --- Migration: Fix any missing 'gender' in existing localStorage config ---
+        state.config = state.config.map(h => {
+            if (!h.gender) {
+                if (h.name.toLowerCase().includes('hostel c')) h.gender = 'Female';
+                else if (h.name.toLowerCase().includes('hostel a') || h.name.toLowerCase().includes('hostel b')) h.gender = 'Male';
+                else h.gender = 'Male'; // Default
+            }
+            return h;
+        });
+        sync();
+
+        /* --- PERSISTENCE --- */
+        function sync() {
+            // We ONLY persist the Hostel Configuration now. 
+            // Students/Allocations will reset on page reload.
+            localStorage.setItem('uem_config', JSON.stringify(state.config));
+        }
+
+        /* --- NAVIGATION --- */
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => {
+                s.style.opacity = '0';
+                s.style.transform = 'translateY(20px)';
+                setTimeout(() => s.classList.remove('active'), 400);
+            });
+            setTimeout(() => {
+                const target = document.getElementById(id);
+                target.classList.add('active');
+                setTimeout(() => {
+                    target.style.opacity = '1';
+                    target.style.transform = 'translateY(0)';
+                }, 50);
+            }, 450);
+
+            const header = document.getElementById('app-header');
+            header.style.display = (id === 'landing-screen' || id === 'warden-login' || id === 'student-login') ? 'none' : 'block';
+
+            if (id === 'warden-dashboard') initDashboard();
+            if (id === 'student-detail') renderStudentDetail();
+        }
+
+        function goBack() { showScreen('landing-screen'); }
+        function logout() { sessionStorage.clear(); showScreen('landing-screen'); }
+
+        /* --- LOGIN --- */
+        function addStudentManual() {
+            const name = document.getElementById('m-name').value;
+            const phone = document.getElementById('m-phone').value;
+            const stream = document.getElementById('m-stream').value;
+            const year = document.getElementById('m-year').value;
+            const gender = document.getElementById('m-gender').value;
+            const food = document.getElementById('m-food').value;
+            const lang = document.getElementById('m-lang').value;
+
+            if(!name || !phone) return alert("Fill mandatory name & phone.");
+            if(state.students.some(s => s.PhoneNumber === phone)) return alert("Phone number already exists!");
+
+            state.students.push({
+                Name: name, PhoneNumber: phone, Stream: stream, 
+                Year: year, Gender: gender, FoodHabit: food, NativeLanguage: lang
+            });
+            sync();
+            updateStats();
+            alert(`Student ${name} added successfully! Total: ${state.students.length}`);
+            
+            // Clear inputs
+            document.querySelectorAll('#m-name, #m-phone, #m-stream, #m-lang').forEach(el => el.value = '');
+        }
+
+        function resetSystem() {
+            if(!confirm("Warning: This will delete ALL student data and allocations forever. Proceed?")) return;
+            state.students = [];
+            state.allocation = [];
+            localStorage.removeItem('uem_students');
+            localStorage.removeItem('uem_allocation');
+            sync();
+            updateStats();
+            alert("System Reset Complete. Ready for new dataset.");
+        }
+
+        function handleWardenLogin() {
+            const id = document.getElementById('w-id').value;
+            const pass = document.getElementById('w-pass').value;
+            if (id.length === 4 && pass.length === 4) {
+                state.wardenId = id;
+                sessionStorage.setItem('w_id', id);
+                showScreen('warden-dashboard');
+            } else alert("Invalid ID/Pass format.");
+        }
+
+        function handleCSVUpload() {
+            const fileInput = document.getElementById('csv-file');
+            if (fileInput.files.length === 0) return alert("Select a file first.");
+            readCSV(fileInput);
+        }
+
+        function handleStudentLogin() {
+            const name = document.getElementById('s-name-in').value.trim();
+            const phone = document.getElementById('s-phone-in').value.trim();
+            const resident = state.allocation.find(s => s.PhoneNumber === phone);
+            if (!resident) return alert("Allocation not found for this number.");
+            if (resident.Name.toLowerCase() !== name.toLowerCase()) return alert("Name mismatch.");
+            state.activeStudent = resident;
+            showScreen('student-detail');
+        }
+
+        /* --- DASHBOARD TABBING --- */
+        function showDashboardTab(tab, btn) {
+            document.querySelectorAll('.dash-tab-content').forEach(c => c.style.display = 'none');
+            document.getElementById('dash-tab-' + tab).style.display = 'block';
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function initDashboard() {
+            updateStats();
+            renderConfigList();
+            if (state.config.length > 0) {
+                state.currentLayoutHostelId = state.currentLayoutHostelId || state.config[0].id;
+                renderLayoutTabs();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('st-total').textContent = state.students.length;
+            const alloc = state.allocation.filter(s => s.Hostel).length;
+            document.getElementById('st-alloc').textContent = alloc;
+            document.getElementById('st-unalloc').textContent = state.students.length - alloc;
+        }
+
+        /* --- CSV --- */
+        function readCSV(input) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
+                const headers = lines[0].split(',').map(h => h.trim());
+                state.tempCSV = lines.slice(1).map(line => {
+                    const vals = line.split(',').map(v => v.trim());
+                    let obj = {}; headers.forEach((h, i) => obj[h] = vals[i]); return obj;
+                });
+                renderPreview();
+            };
+            reader.readAsText(file);
+        }
+
+        function renderPreview() {
+            const table = document.getElementById('preview-table');
+            document.getElementById('preview-area').style.display = 'block';
+            if (!state.tempCSV.length) return;
+            const headers = Object.keys(state.tempCSV[0]);
+            let html = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            state.tempCSV.slice(0, 5).forEach(row => {
+                html += '<tr>' + headers.map(h => `<td>${row[h]}</td>`).join('') + '</tr>';
+            });
+            table.innerHTML = html;
+        }
+
+        function saveStudents() {
+            state.students = state.tempCSV;
+            state.allocation = []; // Reset on new db
+            sync();
+            updateStats();
+            alert("Database updated and saved.");
+            document.getElementById('preview-area').style.display = 'none';
+        }
+
+        /* --- CONFIG MANAGER --- */
+        function addHostel() {
+            const name = document.getElementById('new-h-name').value;
+            const floors = parseInt(document.getElementById('new-h-floors').value);
+            const rpf = parseInt(document.getElementById('new-h-rooms').value);
+            const gender = document.getElementById('new-h-gender').value;
+            if (!name || isNaN(floors) || isNaN(rpf)) return alert("Fill config details.");
+            state.config.push({ id: Date.now(), name, floors, roomsPerFloor: rpf, gender });
+            sync();
+            renderConfigList();
+            renderLayoutTabs();
+        }
+
+        function deleteHostel(id) {
+            state.config = state.config.filter(h => h.id !== id);
+            sync();
+            renderConfigList();
+            renderLayoutTabs();
+        }
+
+        function deleteFloor(hostelId) {
+            const h = state.config.find(x => x.id === hostelId);
+            if (h.floors > 0) h.floors--;
+            sync();
+            renderConfigList();
+            renderLayoutTabs();
+        }
+
+        function addFloor(hostelId) {
+            const h = state.config.find(x => x.id === hostelId);
+            h.floors++;
+            sync();
+            renderConfigList();
+            renderLayoutTabs();
+        }
+
+        function modifyRooms(hostelId, delta) {
+            const h = state.config.find(x => x.id === hostelId);
+            h.roomsPerFloor += delta;
+            if (h.roomsPerFloor < 0) h.roomsPerFloor = 0;
+            sync();
+            renderConfigList();
+            renderLayoutTabs();
+        }
+
+        function renderConfigList() {
+            const container = document.getElementById('hostel-list-config');
+            let html = '<table><thead><tr><th>Hostel</th><th>Gender</th><th>Floors</th><th>Rooms/Floor</th><th>Actions</th></tr></thead><tbody>';
+            state.config.forEach(h => {
+                html += `<tr>
+                    <td><strong>${h.name}</strong></td>
+                    <td><span class="badge ${h.gender === 'Female' ? 'shared' : 'outline'}" style="background:${h.gender === 'Female' ? '#F48FB1' : '#2196F3'}; color:white; border:none;">${h.gender}</span></td>
+                    <td>
+                        <button class="small outline" onclick="deleteFloor(${h.id})">-</button> 
+                        ${h.floors} 
+                        <button class="small outline" onclick="addFloor(${h.id})">+</button>
+                    </td>
+                    <td>
+                        <button class="small outline" onclick="modifyRooms(${h.id}, -1)">-</button> 
+                        ${h.roomsPerFloor} 
+                        <button class="small outline" onclick="modifyRooms(${h.id}, 1)">+</button>
+                    </td>
+                    <td><button class="small danger" onclick="deleteHostel(${h.id})">Delete Hostel</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        /* --- ALGORITHM: GENDER BASIS --- */
+        function runAllocationEngine() {
+            const criteria = Array.from(document.querySelectorAll('.criteria:checked')).map(c => c.value);
+            if (!state.students.length) return alert("Upload students database first.");
+            
+            // Fresh start
+            state.allocation = [];
+            
+            let males = state.students.filter(s => (s.Gender || '').toLowerCase() === 'male');
+            let females = state.students.filter(s => (s.Gender || '').toLowerCase() === 'female');
+
+            // Find all available slots
+            let rooms = [];
+            state.config.forEach(h => {
+                for(let f=1; f<=h.floors; f++) {
+                    for(let r=1; r<=h.roomsPerFloor; r++) {
+                        rooms.push({ hostel: h.name, floor: f, room: r, capacity: r===1 ? 1 : 2, occupied: 0, roomGender: h.gender });
+                    }
+                }
+            });
+
+            const processGender = (pool, genderType) => {
+                if (pool.length === 0) return;
+
+                // 1. Matching Logic
+                let unassigned = JSON.parse(JSON.stringify(pool));
+                let paired = [];
+                let allPossiblePairs = [];
+
+                for(let i=0; i<unassigned.length; i++) {
+                    for(let j=i+1; j<unassigned.length; j++) {
+                        let score = 0; let matched = [];
+                        criteria.forEach(c => { if(unassigned[i][c] === unassigned[j][c]) { score++; matched.push(c); } });
+                        allPossiblePairs.push({ i, j, score, s1: unassigned[i], s2: unassigned[j], matched });
+                    }
+                }
+                allPossiblePairs.sort((a,b) => b.score - a.score);
+
+                let isTaken = new Array(unassigned.length).fill(false);
+                for(let p of allPossiblePairs) {
+                    if(!isTaken[p.i] && !isTaken[p.j]) {
+                        paired.push(p); isTaken[p.i] = true; isTaken[p.j] = true;
+                    }
+                }
+                let singles = unassigned.filter((_, idx) => !isTaken[idx]);
+
+                // 2. Filter Rooms for this specific Gender dynamically
+                let genderRooms = rooms.filter(r => (r.roomGender || '').toLowerCase() === genderType.toLowerCase());
+
+                // 3. Place Pairs
+                paired.forEach(p => {
+                    const rIdx = genderRooms.findIndex(rm => rm.capacity === 2 && rm.occupied === 0);
+                    if (rIdx !== -1) {
+                        const rm = genderRooms[rIdx];
+                        rm.occupied = 2;
+                        rm.gender = p.s1.Gender;
+                        state.allocation.push({ ...p.s1, Hostel: rm.hostel, Floor: rm.floor, Room: rm.room, RoomType: 'SHARED', RoommateName: p.s2.Name, RoommatePhone: p.s2.PhoneNumber, MatchScore: p.score, MatchedOn: p.matched });
+                        state.allocation.push({ ...p.s2, Hostel: rm.hostel, Floor: rm.floor, Room: rm.room, RoomType: 'SHARED', RoommateName: p.s1.Name, RoommatePhone: p.s1.PhoneNumber, MatchScore: p.score, MatchedOn: p.matched });
+                    } else {
+                        state.allocation.push({ ...p.s1, Hostel: null }, { ...p.s2, Hostel: null });
+                    }
+                });
+
+                // 4. Place Singles
+                singles.forEach(s => {
+                    let rIdx = genderRooms.findIndex(rm => rm.capacity === 1 && rm.occupied === 0);
+                    if (rIdx === -1) rIdx = genderRooms.findIndex(rm => rm.capacity === 2 && rm.occupied === 0);
+                    if (rIdx === -1) rIdx = genderRooms.findIndex(rm => rm.capacity === 2 && rm.occupied === 1 && rm.gender === s.Gender);
+
+                    if (rIdx !== -1) {
+                        const rm = genderRooms[rIdx];
+                        state.allocation.push({ ...s, Hostel: rm.hostel, Floor: rm.floor, Room: rm.room, RoomType: rm.capacity === 1 ? 'SINGLE' : 'SHARED' });
+                        rm.occupied++;
+                        rm.gender = s.Gender;
+                    } else {
+                        state.allocation.push({ ...s, Hostel: null });
+                    }
+                });
+            };
+
+            processGender(males, 'male');
+            processGender(females, 'female');
+
+            sync();
+            updateStats();
+            alert("Allocation Engine Complete. Gender isolation and roommate matching logic applied.");
+            initDashboard();
+            showDashboardTab('layouts', document.querySelector('.tab-btn:last-child'));
+        }
+
+        /* --- VISUAL LAYOUT & MANUAL OVERRIDE --- */
+        function renderLayoutTabs() {
+            const bar = document.getElementById('hostel-tabs-bar');
+            bar.innerHTML = state.config.map(h => `<button class="tab-btn ${state.currentLayoutHostelId === h.id ? 'active':''}" onclick="state.currentLayoutHostelId=${h.id}; renderLayoutTabs(); renderVisualLayout();">${h.name}</button>`).join('');
+            renderVisualLayout();
+        }
+
+        function renderVisualLayout() {
+            const h = state.config.find(x => x.id === state.currentLayoutHostelId);
+            const cont = document.getElementById('hostel-visual-container');
+            if(!h) return cont.innerHTML = "No hostels configured.";
+            
+            let html = '';
+            for(let f=1; f<=h.floors; f++) {
+                html += `<div class="floor-section"><div class="floor-header">Floor ${f}</div><div class="room-grid">`;
+                for(let r=1; r<=h.roomsPerFloor; r++) {
+                    const type = r === 1 ? 'SINGLE' : 'SHARED';
+                    const occupants = state.allocation.filter(s => s.Hostel === h.name && s.Floor === f && s.Room === r);
+                    const genderClass = occupants.length ? `gender-${occupants[0].Gender.toLowerCase()}` : '';
+
+                    html += `<div class="room-card ${occupants.length ? '' : 'empty'} ${genderClass}">
+                        <div class="room-label">${h.name} - F${f} - R${r} <span class="badge ${type.toLowerCase()}">${type}</span></div>
+                        <div class="occupants-list" style="margin-top:10px;">
+                            ${occupants.map((occ, idx) => `
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                    <div><strong>${occ.Name}</strong><br><small>${occ.PhoneNumber}</small></div>
+                                    <button class="small danger" onclick="removeOccupant('${occ.PhoneNumber}')">Remove</button>
+                                </div>
+                            `).join('<hr style="margin:5px 0; border:0.25px solid #eee;">')}
+                            ${occupants.length < (type === 'SINGLE' ? 1 : 2) ? `<button class="small outline" style="width:100%; margin-top:10px;" onclick="openManualPicker('${h.name}', ${f}, ${r})">Add Occupant</button>` : ''}
+                        </div>
+                    </div>`;
+                }
+                html += `</div></div>`;
+            }
+            cont.innerHTML = html;
+        }
+
+        function removeOccupant(phone) {
+            state.allocation = state.allocation.filter(s => s.PhoneNumber !== phone);
+            sync();
+            updateStats();
+            renderVisualLayout();
+        }
+
+        function openManualPicker(hName, floor, room) {
+            state.modalTarget = { hName, floor, room };
+            const picker = document.getElementById('modal-st-picker');
+            const unallocated = state.students.filter(s => !state.allocation.find(a => a.PhoneNumber === s.PhoneNumber && a.Hostel));
+            
+            picker.innerHTML = '<option value="">-- Select Student --</option>' + 
+                unallocated.map(s => `<option value="${s.PhoneNumber}">${s.Name} (${s.Gender})</option>`).join('');
+            
+            document.getElementById('room-ref-display').textContent = `Target: ${hName} - Floor ${floor} - Room ${room}`;
+            document.getElementById('modal-edit-occupant').style.display = 'flex';
+        }
+
+        function saveManualAssignment() {
+            const phone = document.getElementById('modal-st-picker').value;
+            if(!phone) return alert("Select a student.");
+            const student = state.students.find(s => s.PhoneNumber === phone);
+            const target = state.modalTarget;
+            
+            // Validation: Gender Match in existing room
+            const existing = state.allocation.filter(s => s.Hostel === target.hName && s.Floor === target.floor && s.Room === target.room);
+            if(existing.length > 0 && existing[0].Gender !== student.Gender) return alert("Gender mismatch in this room.");
+
+            state.allocation.push({
+                ...student,
+                Hostel: target.hName,
+                Floor: target.floor,
+                Room: target.room,
+                RoomType: target.room === 1 ? 'SINGLE' : 'SHARED'
+            });
+            sync();
+            closeModal();
+            updateStats();
+            renderVisualLayout();
+        }
+
+        function closeModal() { document.getElementById('modal-edit-occupant').style.display = 'none'; }
+
+        /* --- DOWNLOADS --- */
+        function downloadFullRegistry() {
+            let csv = "Name,PhoneNumber,Gender,Stream,FoodHabit,Year,Hostel,Floor,Room,RoomType\n";
+            state.allocation.forEach(s => {
+                csv += `${s.Name},${s.PhoneNumber},${s.Gender},${s.Stream},${s.FoodHabit},${s.Year},${s.Hostel || 'Unallocated'},${s.Floor || ''},${s.Room || ''},${s.RoomType || ''}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `Registry_${Date.now()}.csv`; a.click();
+        }
+
+        /* --- STUDENT VIEW --- */
+        function renderStudentDetail() {
+            const s = state.activeStudent;
+            document.getElementById('s-detail-content').innerHTML = `
+                <div class="card" style="max-width:800px; width: 100%; margin: 2rem auto;">
+                    <div class="card-header"><h3>Allocation Record</h3><button onclick="logout()">Logout</button></div>
+                    <div class="card-body">
+                        <div style="text-align:center; padding: 2rem; border-bottom: 2px solid var(--gold);">
+                            <h4 class="rajdhani">Resident Name</h4>
+                            <h2 class="rajdhani" style="font-size:3rem; color:var(--navy);">${s.Name}</h2>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top:2rem;">
+                            <div>
+                                <p><strong>Stream:</strong> ${s.Stream}</p>
+                                <p><strong>Year:</strong> ${s.Year}</p>
+                                <p><strong>Gender:</strong> ${s.Gender}</p>
+                            </div>
+                            <div style="background:var(--navy); color:white; padding: 1.5rem; text-align:center;">
+                                <h4 class="rajdhani" style="color:var(--gold)">Your Room</h4>
+                                <h1 class="rajdhani" style="font-size:2.5rem">${s.Hostel}</h1>
+                                <p>F${s.Floor} - R${s.Room} (${s.RoomType})</p>
+                            </div>
+                        </div>
+                        ${s.RoommateName ? `
+                            <div class="card" style="margin-top:2rem; border:1px solid var(--gold);">
+                                <div class="card-body">
+                                    <h4 class="rajdhani">Your Roommate</h4>
+                                    <p><strong>Name:</strong> ${s.RoommateName}</p>
+                                    <p><strong>Phone:</strong> ${s.RoommatePhone}</p>
+                                    <div class="badge shared" style="margin-top:10px;">Match Criteria: ${s.MatchedOn.join(', ')}</div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.onload = () => { if(state.wardenId) showScreen('warden-dashboard'); };
+    </script>
+</body>
+</html>
